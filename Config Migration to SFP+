@@ -1,0 +1,46 @@
+Przeniesienie ustawień z portu ether3 na ether11 (SFP+) w routerze Mikrotik
+
+
+Zaktualizowana instrukcja:
+1. Usuń adresy IP z portu ether3
+Aby uniknąć konfliktów adresów, najpierw usuń przypisane adresy IP z interfejsu ether3:
+
+/ip address remove [find interface=ether3]
+
+2. Przypisz adresy IP do ether11
+Następnie przypisz te same adresy IP, które były przypisane do portu ether3, do portu ether11:
+
+/ip address add address=213.155.166.161/28 interface=ether11
+/ip address add address=192.168.1.1/24 interface=ether11 comment="LAN"
+/ip address add address=213.155.166.177/29 interface=ether11
+/ip address add address=192.168.4.1/24 interface=ether11
+/ip address add address=192.168.100.1/24 interface=ether11
+/ip address add address=192.168.101.1/32 interface=ether11 disabled=yes
+/ip address add address=192.168.101.1/24 interface=ether11
+
+3. Przenieś port do bridge (jeśli dotyczy)
+Jeśli port ether3 był częścią bridge, musisz dodać ether11 do tego samego bridge. Najpierw sprawdź, czy ether3 jest w bridge’u:
+
+/interface bridge port print where interface=ether3
+Jeśli znajdziesz wpis, dodaj ether11 do tego samego bridge:
+
+/interface bridge port add bridge=<nazwa_bridge> interface=ether11
+4. Klonowanie ustawień NAT i firewall (jeśli dotyczy)
+Jeżeli na porcie ether3 były reguły NAT lub firewall, musisz je odpowiednio skopiować:
+
+Reguły NAT:
+/ip firewall nat print where out-interface=ether3
+Skopiuj je, zmieniając ether3 na ether11:
+
+/ip firewall nat add chain=<chain_name> action=<action> out-interface=ether11
+
+Reguły firewall:
+/ip firewall filter print where in-interface=ether3
+Skopiuj reguły, zamieniając ether3 na ether11:
+
+/ip firewall filter add chain=<chain_name> action=<action> in-interface=ether11
+
+5. Wyłączenie portu ether3 (jeśli konieczne)
+Po przeniesieniu konfiguracji możesz wyłączyć port ether3, jeśli nie będziesz go już używać:
+
+/interface ethernet disable ether3
