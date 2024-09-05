@@ -1,0 +1,29 @@
+Na routerze backupowym:
+/tool netwatch
+add host=10.99.99.10 interval=10s timeout=3s \
+    up-script="/system script run demote_backup" \
+    down-script="/system script run promote_backup"
+	
+Skrypt do promowania Backup jako głównego (promote_backup):
+/system script
+add name=promote_backup source="/interface ethernet enable [find name=ether3]; /ip dhcp-server enable [find name=default]"
+/system script set 85 source="/log info \"Promoting backup router to active state\"; /interface ethernet enable [find name=ether3]; /interface ethernet enable [find name=ether4]; /ip dhcp-server enable [find name=dhcp1]; /ip dhcp-server enable [find name=dhcp2]; /ip dhcp-server enable [find name=dhcp5]; /ip dhcp-server enable [find name=dhcp6]; /ip dhcp-server enable [find name=dhcp7]"
+/system script set promote_backup dont-require-permissions=yes
+
+
+Skrypt do zdejmowania roli głównej z Backup (demote_backup):
+/system script
+add name=demote_backup source="/interface ethernet disable [find name=ether3]; /ip dhcp-server disable [find name=default]"
+/system script set 86 source="/log info \"Demoting backup router to standby state\"; /interface ethernet disable [find name=ether3]; /interface ethernet disable [find name=ether4]; /ip dhcp-server disable [find name=dhcp1]; /ip dhcp-server disable [find name=dhcp2]; /ip dhcp-server disable [find name=dhcp5]; /ip dhcp-server disable [find name=dhcp6]; /ip dhcp-server disable [find name=dhcp7]"
+/system script set demote_backup dont-require-permissions=yes
+
+	
+	
+Router1:
+/ip address add address=10.99.99.10/30 interface=ether8
+/ip route add dst-address=10.99.99.0/30 gateway=ether8
+
+Router2:
+/ip address add address=10.99.99.9/30 interface=ether8
+/ip route add dst-address=10.99.99.0/30 gateway=ether8
+
